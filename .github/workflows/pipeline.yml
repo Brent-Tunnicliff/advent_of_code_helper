@@ -1,0 +1,19 @@
+# Copyright © 2024 Brent Tunnicliff <brent@tunnicliff.dev>
+
+name: Pipeline
+
+on:
+  push:
+  workflow_dispatch:
+
+jobs:
+  build:
+    runs-on: macos-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Set Xcode version
+        run: sudo xcode-select -s /Applications/Xcode_16.1.app
+      - name: Build package
+        run: swift build
+      - name: Run tests
+        run: swift test
