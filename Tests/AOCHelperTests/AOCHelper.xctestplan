@@ -1,0 +1,33 @@
+{
+  "configurations" : [
+    {
+      "id" : "7C667754-F17E-4F8F-9164-A7B65A0B6155",
+      "name" : "Test Scheme Action",
+      "options" : {
+
+      }
+    }
+  ],
+  "defaultOptions" : {
+    "codeCoverage" : {
+      "targets" : [
+        {
+          "containerPath" : "container:",
+          "identifier" : "AOCHelper",
+          "name" : "AOCHelper"
+        }
+      ]
+    },
+    "testExecutionOrdering" : "random"
+  },
+  "testTargets" : [
+    {
+      "target" : {
+        "containerPath" : "container:",
+        "identifier" : "AOCHelperTests",
+        "name" : "AOCHelperTests"
+      }
+    }
+  ],
+  "version" : 1
+}
