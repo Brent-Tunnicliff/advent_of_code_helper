@@ -14,7 +14,7 @@ public final class Box<Value: CoordinatesType & Sendable>: Sendable {
 
 extension Box: CustomStringConvertible {
     public var description: String {
-        corners.description
+        lines.description
     }
 }
 

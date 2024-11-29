@@ -11,17 +11,40 @@ struct LineTests {
                 from: Coordinates(x: 16, y: 16),
                 to: Coordinates(x: 20, y: 20)
             ),
-            Coordinates(x: 80, y: 80)
+            Line(
+                from: Coordinates(x: 16, y: 16),
+                to: Coordinates(x: 27, y: 27)
+            )
         ),
         (
             Line(
                 from: Coordinates(x: 19, y: 13),
                 to: Coordinates(x: 17, y: 14)
             ),
-            Coordinates(x: -61, y: 53)
+            Line(
+                from: Coordinates(x: 19, y: 13),
+                to: Coordinates(x: 7, y: 19)
+            )
+        ),
+        (
+            Line(
+                from: Coordinates(x: -72, y: -25),
+                to: Coordinates(x: 72, y: 25)
+            ),
+            nil
+        ),
+        (
+            Line(
+                from: Coordinates(x: 0, y: 0),
+                to: Coordinates(x: 5, y: 5)
+            ),
+            Line(
+                from: Coordinates(x: 7, y: 7),
+                to: Coordinates(x: 27, y: 27)
+            )
         ),
     ])
-    func lineExtending(_ argument: (line: Line<Coordinates>, expectedToResult: Coordinates)) async throws {
+    func testExtending(_ argument: (line: Line<Coordinates>, expectedToResult: Line<Coordinates>?)) {
         // given
         let box = Box(
             bottomLeft: .init(x: 7, y: 7),
@@ -34,9 +57,7 @@ struct LineTests {
         let result = argument.line.extending(within: box)
 
         // then
-        #expect(result.from == argument.line.from)
-        #expect(result.to.x == argument.expectedToResult.x)
-        #expect(result.to.y == argument.expectedToResult.y)
+        #expect(result == argument.expectedToResult)
     }
 
     @Test(arguments: [
@@ -56,7 +77,7 @@ struct LineTests {
             expectedResult: .init(x: 15, y: 15)
         ),
     ])
-    func testOverlapLine(input: CoordinatesOverlapLineInput) async throws {
+    func testOverlapLine(input: CoordinatesOverlapLineInput) {
         let result = input.lineOne.overlaps(input.lineTwo)
         #expect(result == input.expectedResult)
     }
@@ -65,5 +86,27 @@ struct LineTests {
         let lineOne: Line<Coordinates>
         let lineTwo: Line<Coordinates>
         let expectedResult: Coordinates?
+    }
+
+    @Test
+    func testDescription() {
+        let line = Line(
+            from: Coordinates(x: 15, y: 16),
+            to: Coordinates(x: 20, y: 21)
+        )
+        #expect(line.description == "(15,16)-(20,21)")
+    }
+
+    @Test
+    func testEquatable() {
+        let lineOne = Line(
+            from: Coordinates(x: 15, y: 16),
+            to: Coordinates(x: 20, y: 21)
+        )
+        let lineTwo = Line(
+            from: Coordinates(x: 15, y: 16),
+            to: Coordinates(x: 20, y: 21)
+        )
+        #expect(lineOne == lineTwo)
     }
 }

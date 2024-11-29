@@ -19,7 +19,7 @@ struct GridTests {
         """
 
     @Test
-    func testDescription() throws {
+    func testDescription() {
         // when
         let result = TestGrid(data: testData).description
 
@@ -28,7 +28,7 @@ struct GridTests {
     }
 
     @Test
-    func testBottomLeft() throws {
+    func testBottomLeft() {
         // when
         let result = TestGrid(data: testData).bottomLeft
 
@@ -38,7 +38,7 @@ struct GridTests {
     }
 
     @Test
-    func testBottomRight() throws {
+    func testBottomRight() {
         // when
         let result = TestGrid(data: testData).bottomRight
 
@@ -48,7 +48,7 @@ struct GridTests {
     }
 
     @Test
-    func testTopLeft() throws {
+    func testTopLeft() {
         // when
         let result = TestGrid(data: testData).topLeft
 
@@ -58,7 +58,7 @@ struct GridTests {
     }
 
     @Test
-    func testTopRight() throws {
+    func testTopRight() {
         // when
         let result = TestGrid(data: testData).topRight
 
@@ -68,7 +68,7 @@ struct GridTests {
     }
 
     @Test
-    func testGetCoordinatesEastInvalid() throws {
+    func testGetCoordinatesEastInvalid() {
         // when
         let result = TestGrid(data: testData).getCoordinates(from: .init(x: 9, y: 9), direction: .east)
 
@@ -77,7 +77,7 @@ struct GridTests {
     }
 
     @Test
-    func testGetCoordinatesEastValid() throws {
+    func testGetCoordinatesEastValid() {
         // when
         let result = TestGrid(data: testData).getCoordinates(from: .init(x: 0, y: 0), direction: .east)
 
@@ -87,7 +87,7 @@ struct GridTests {
     }
 
     @Test
-    func testGetCoordinatesNorthInvalid() throws {
+    func testGetCoordinatesNorthInvalid() {
         // when
         let result = TestGrid(data: testData).getCoordinates(from: .init(x: 0, y: 0), direction: .north)
 
@@ -96,7 +96,7 @@ struct GridTests {
     }
 
     @Test
-    func testGetCoordinatesNorthValid() throws {
+    func testGetCoordinatesNorthValid() {
         // when
         let result = TestGrid(data: testData).getCoordinates(from: .init(x: 9, y: 9), direction: .north)
 
@@ -106,7 +106,7 @@ struct GridTests {
     }
 
     @Test
-    func testGetCoordinatesSouthInvalid() throws {
+    func testGetCoordinatesSouthInvalid() {
         // when
         let result = TestGrid(data: testData).getCoordinates(from: .init(x: 9, y: 9), direction: .south)
 
@@ -115,7 +115,7 @@ struct GridTests {
     }
 
     @Test
-    func testGetCoordinatesSouthValid() throws {
+    func testGetCoordinatesSouthValid() {
         // when
         let result = TestGrid(data: testData).getCoordinates(from: .init(x: 0, y: 0), direction: .south)
 
@@ -125,7 +125,7 @@ struct GridTests {
     }
 
     @Test
-    func testGetCoordinatesWestInvalid() throws {
+    func testGetCoordinatesWestInvalid() {
         // when
         let result = TestGrid(data: testData).getCoordinates(from: .init(x: 0, y: 0), direction: .west)
 
@@ -134,7 +134,7 @@ struct GridTests {
     }
 
     @Test
-    func testGetCoordinatesWest() throws {
+    func testGetCoordinatesWest() {
         // when
         let result = TestGrid(data: testData).getCoordinates(from: .init(x: 9, y: 9), direction: .west)
 
@@ -142,9 +142,96 @@ struct GridTests {
         #expect(result?.x == 8)
         #expect(result?.y == 9)
     }
+
+    @Test(arguments: [
+        (Coordinates(x: 3, y: 0), "1"),
+        (Coordinates(x: 6, y: 4), "2"),
+        (Coordinates(x: 7, y: 7), "."),
+        (Coordinates(x: 50, y: 50), nil),
+    ])
+    func testSubscript(_ argument: (key: Coordinates, expectedResult: String?)) {
+        let grid = TestGrid(data: testData)
+        #expect(grid[argument.key]?.description == argument.expectedResult)
+    }
+
+    @Test(arguments: [
+        // Adding to an empty grid
+        (
+            TestGrid(),
+            [Coordinates.zeroZero: Value.empty, .threeZero: Value.one],
+            TestGrid(values: [Coordinates.zeroZero: Value.empty, .threeZero: .one]),
+            false
+        ),
+        // Adding to a grid with conflicts, no override ignores the conflict but still adds the new.
+        (
+            TestGrid(values: [.zeroZero: .empty]),
+            [.zeroZero: .two, .threeZero: .one],
+            TestGrid(values: [.zeroZero: .empty, .threeZero: .one]),
+            false
+        ),
+        // Adding to a grid with conflicts, with override adds all new values.
+        (
+            TestGrid(values: [.zeroZero: .empty]),
+            [.zeroZero: .two, .threeZero: .one],
+            TestGrid(values: [.zeroZero: .two, .threeZero: .one]),
+            true
+        ),
+    ])
+    func testAdding(
+        _ argument: (
+            grid: TestGrid,
+            adding: [Coordinates: Value],
+            expectedResult: TestGrid,
+            overrideExisting: Bool
+        )
+    ) {
+        let result = argument.grid.adding(argument.adding, overrideExisting: argument.overrideExisting)
+        #expect(result == argument.expectedResult)
+    }
+
+    @Test
+    func testRemovingKeys() {
+        let initialGrid = TestGrid(data: testData)
+        let keysToRemove: [Coordinates] = [.zeroZero, .threeZero, .sixFour]
+        let result = initialGrid.removing(keys: keysToRemove)
+
+        #expect(result.values.count == initialGrid.values.count - keysToRemove.count)
+
+        for key in keysToRemove {
+            let comment = Comment(stringLiteral: key.description)
+            #expect(initialGrid[key] != nil, comment)
+            #expect(result[key] == nil, comment)
+        }
+    }
+
+    @Test
+    func testRemovingValue() {
+        let expectedResult = TestGrid(values: [
+            Coordinates(x: 3, y: 0): .one,
+            Coordinates(x: 7, y: 1): .two,
+            Coordinates(x: 0, y: 2): .one,
+            Coordinates(x: 6, y: 4): .two,
+            Coordinates(x: 1, y: 5): .one,
+            Coordinates(x: 9, y: 6): .one,
+            Coordinates(x: 7, y: 8): .two,
+            Coordinates(x: 0, y: 9): .two,
+            Coordinates(x: 4, y: 9): .one,
+        ])
+        let initialGrid = TestGrid(data: testData)
+        let result = initialGrid.removing(value: .empty)
+        #expect(result == expectedResult)
+    }
 }
 
-private extension GridTests {
+private extension Coordinates {
+    static let zeroZero = Coordinates(x: 0, y: 0)
+    static let threeZero = Coordinates(x: 3, y: 0)
+    static let sixFour = Coordinates(x: 6, y: 4)
+    static let seven = Coordinates(x: 7, y: 7)
+    static let fiftyFifty = Coordinates(x: 50, y: 50)
+}
+
+extension GridTests {
     typealias TestGrid = Grid<Coordinates, Value>
     enum Value: String, CustomStringConvertible, CaseIterable {
         case empty = "."
