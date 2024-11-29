@@ -44,7 +44,7 @@ struct LineTests {
             )
         ),
     ])
-    func testExtending(_ argument: (line: Line<Coordinates>, expectedToResult: Line<Coordinates>?)) {
+    func testExtending(line: Line<Coordinates>, expectedToResult: Line<Coordinates>?) {
         // given
         let box = Box(
             bottomLeft: .init(x: 7, y: 7),
@@ -54,10 +54,10 @@ struct LineTests {
         )
 
         // when
-        let result = argument.line.extending(within: box)
+        let result = line.extending(within: box)
 
         // then
-        #expect(result == argument.expectedToResult)
+        #expect(result == expectedToResult)
     }
 
     @Test(arguments: [
@@ -108,5 +108,18 @@ struct LineTests {
             to: Coordinates(x: 20, y: 21)
         )
         #expect(lineOne == lineTwo)
+    }
+
+    @Test
+    func testTwoDimensionalLine() {
+        let value = Line(
+            from: ThreeDimensionalCoordinates(x: 1, y: 2, z: 3),
+            to: ThreeDimensionalCoordinates(x: 4, y: 5, z: 6)
+        )
+        let expectedResult = Line(
+            from: Coordinates(x: value.from.x, y: value.from.y),
+            to: Coordinates(x: value.to.x, y: value.to.y)
+        )
+        #expect(value.twoDimensionalLine == expectedResult)
     }
 }

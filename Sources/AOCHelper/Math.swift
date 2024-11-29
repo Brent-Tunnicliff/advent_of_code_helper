@@ -16,8 +16,12 @@ public enum Math {
         vector.reduce(1, lcm)
     }
 
-    public static func lcm(a: Int, b: Int) -> Int {
+    public static func lcm(_ a: Int, _ b: Int) -> Int {
         (a / gcd(a, b)) * b
+    }
+
+    public static func gcd(_ vector: [Int]) -> Int {
+        vector.dropFirst().reduce(vector.first ?? 0, gcd)
     }
 
     public static func gcd(_ a: Int, _ b: Int) -> Int {

@@ -149,9 +149,9 @@ struct GridTests {
         (Coordinates(x: 7, y: 7), "."),
         (Coordinates(x: 50, y: 50), nil),
     ])
-    func testSubscript(_ argument: (key: Coordinates, expectedResult: String?)) {
+    func testSubscript(key: Coordinates, expectedResult: String?) {
         let grid = TestGrid(data: testData)
-        #expect(grid[argument.key]?.description == argument.expectedResult)
+        #expect(grid[key]?.description == expectedResult)
     }
 
     @Test(arguments: [
@@ -178,15 +178,13 @@ struct GridTests {
         ),
     ])
     func testAdding(
-        _ argument: (
-            grid: TestGrid,
-            adding: [Coordinates: Value],
-            expectedResult: TestGrid,
-            overrideExisting: Bool
-        )
+        grid: TestGrid,
+        adding: [Coordinates: Value],
+        expectedResult: TestGrid,
+        overrideExisting: Bool
     ) {
-        let result = argument.grid.adding(argument.adding, overrideExisting: argument.overrideExisting)
-        #expect(result == argument.expectedResult)
+        let result = grid.adding(adding, overrideExisting: overrideExisting)
+        #expect(result == expectedResult)
     }
 
     @Test
