@@ -1,8 +1,7 @@
 // Copyright © 2024 Brent Tunnicliff <brent@tunnicliff.dev>
 
+import AOCHelper
 import Testing
-
-@testable import AOCHelper
 
 struct ArrayTests {
     private let input = [1, 1, 2, 3, 2, 4, 5, 2]

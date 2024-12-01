@@ -1,8 +1,7 @@
 // Copyright © 2024 Brent Tunnicliff <brent@tunnicliff.dev>
 
+import AOCHelper
 import Testing
-
-@testable import AOCHelper
 
 struct BoxTests {
     private let box = Box(

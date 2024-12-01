@@ -1,6 +1,6 @@
 // Copyright © 2024 Brent Tunnicliff <brent@tunnicliff.dev>
 
-extension Character {
+public extension Character {
     /// Converts current value to type Int.
     ///
     /// Throws a fatal error if unable to convert.

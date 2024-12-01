@@ -1,6 +1,6 @@
 // Copyright © 2024 Brent Tunnicliff <brent@tunnicliff.dev>
 
-extension StringProtocol {
+public extension StringProtocol {
     /// Trims all while spaces from the start and end of the value.
     func trimmingWhitespaces() -> String {
         trimmingCharacters(in: .whitespacesAndNewlines)

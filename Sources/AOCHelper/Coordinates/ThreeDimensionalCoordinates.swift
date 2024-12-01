@@ -5,7 +5,7 @@ public final class ThreeDimensionalCoordinates: CoordinatesType {
     public let y: Int
     public let z: Int
 
-    init(x: Int, y: Int, z: Int) {
+    public init(x: Int, y: Int, z: Int) {
         self.x = x
         self.y = y
         self.z = z

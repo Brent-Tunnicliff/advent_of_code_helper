@@ -4,7 +4,11 @@ import Foundation
 
 /// Simple in memory cache.
 public actor Cache<Key: Hashable, Value> {
-    private var values: [Key: Value] = [:]
+    private var values: [Key: Value]
+
+    public init() {
+        values = [:]
+    }
 
     public func object(for key: Key) -> Value? {
         values[key]
