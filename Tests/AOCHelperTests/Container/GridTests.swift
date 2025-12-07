@@ -218,6 +218,42 @@ struct GridTests {
         let result = initialGrid.removing(value: .empty)
         #expect(result == expectedResult)
     }
+
+    // We expect equals to always match based on the inner values no matter the type.
+    @Test
+    @available(macOS 15.0, *)
+    func testEquals() {
+        let valuesOne = [
+            Coordinates(x: 0, y: 0): "1",
+            Coordinates(x: 0, y: 1): "2",
+            Coordinates(x: 1, y: 0): "3",
+            Coordinates(x: 1, y: 1): "4",
+        ]
+
+        let valuesTwo = [
+            Coordinates(x: 0, y: 0): "5",
+            Coordinates(x: 0, y: 1): "6",
+            Coordinates(x: 1, y: 0): "7",
+            Coordinates(x: 1, y: 1): "8",
+        ]
+
+        let immutableGridOne = ImmutableGrid(values: valuesOne)
+        let immutableGridTwo = ImmutableGrid(values: valuesTwo)
+        let mutableGridOne = MutableGrid(values: valuesOne)
+        let mutableGridTwo = MutableGrid(values: valuesTwo)
+
+        #expect(immutableGridOne == immutableGridOne)
+        #expect(immutableGridOne != immutableGridTwo)
+
+        #expect(mutableGridOne == mutableGridOne)
+        #expect(mutableGridOne != mutableGridTwo)
+
+        #expect(immutableGridOne == mutableGridOne)
+        #expect(immutableGridOne != mutableGridTwo)
+
+        #expect(mutableGridOne == immutableGridOne)
+        #expect(mutableGridOne != immutableGridTwo)
+    }
 }
 
 private extension Coordinates {
@@ -229,7 +265,7 @@ private extension Coordinates {
 }
 
 extension GridTests {
-    typealias TestGrid = Grid<Coordinates, Value>
+    typealias TestGrid = ImmutableGrid<Coordinates, Value>
     enum Value: String, CustomStringConvertible, CaseIterable {
         case empty = "."
         case one = "1"

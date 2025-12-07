@@ -1,38 +1,48 @@
 // Copyright © 2024 Brent Tunnicliff <brent@tunnicliff.dev>
 
 import Foundation
+import Synchronization
 
-// MARK: - Grid
+// MARK: - GridType
 
 public typealias GridKeyType = CoordinatesType & Sendable
 public typealias GridValueType = CustomStringConvertible & Sendable & Hashable
 
-// Using class because grid can be large and tends to be passed around a lot.
-// In 2023 Advent of Code I found using recursion and priority lists a bunch, so passing around a reference
-// instead of copying all the data can significantly reduce memory use without needing workarounds.
-// Lets see how this goes for 2024.
-public final class Grid<Key: GridKeyType, Value: GridValueType>: Sendable {
-    public let values: [Key: Value]
+public protocol GridType: Sendable, CustomStringConvertible, Equatable, Hashable {
+    associatedtype Key: GridKeyType
+    associatedtype Value: GridValueType
+    associatedtype Grid: GridType = Self
 
-    public subscript(key: Key) -> Value? {
-        get { values[key] }
-    }
+    var values: [Key: Value] { get }
+    subscript(key: Key) -> Value? { get }
 
-    public init() {
-        self.values = [:]
-    }
-
-    public init(values: [Key: Value]) {
-        self.values = values
-    }
+    init(values: [Key: Value])
 
     /// Returns copy that adds all the input values.
     ///
     /// Defaults to overriding any existing values with the new inputs.
-    public func adding(
-        _ newValues: [Key: Value],
-        overrideExisting: Bool = true
-    ) -> Grid<Key, Value> {
+    func adding(_ newValues: [Key: Value]) -> Grid
+
+    /// Returns copy that adds all the input values.
+    func adding(_ newValues: [Key: Value], overrideExisting: Bool) -> Grid
+
+    /// Returns copy that removed all occurrences of input keys.
+    func removing(keys: [Key]) -> Grid
+
+    /// Returns copy that removed all occurrences equal to the value input.
+    func removing(value: Value) -> Grid
+}
+
+extension GridType where Grid.Key == Key, Grid.Value == Value {
+    public init() {
+        self.init(values: [:])
+    }
+
+    public func adding(_ newValues: [Key: Value]) -> Grid {
+        adding(newValues, overrideExisting: true)
+    }
+
+    public func adding(_ newValues: [Key: Value], overrideExisting: Bool) -> Grid {
         Grid(
             values: values.merging(newValues, uniquingKeysWith: { current, new in
                 overrideExisting ? new : current
@@ -40,8 +50,7 @@ public final class Grid<Key: GridKeyType, Value: GridValueType>: Sendable {
         )
     }
 
-    /// Returns copy that removed all occurrences of input keys.
-    public func removing(keys: [Key]) -> Grid<Key, Value> {
+    public func removing(keys: [Key]) -> Grid {
         var newValues = self.values
         for key in keys {
             newValues[key] = nil
@@ -50,15 +59,65 @@ public final class Grid<Key: GridKeyType, Value: GridValueType>: Sendable {
         return Grid(values: newValues)
     }
 
-    /// Returns copy that removed all occurrences equal to the value input.
     public func removing(value: Value) -> Grid {
         Grid(values: values.filter { $0.value != value })
     }
+
+    public func toImmutableGrid() -> ImmutableGrid<Key, Value> {
+        ImmutableGrid(values: values)
+    }
+
+    @available(macOS 15.0, *)
+    public func toMutableGrid() -> MutableGrid<Key, Value> {
+        MutableGrid(values: values)
+    }
 }
 
-// MARK: CustomStringConvertible
+extension GridType {
+    public func hash(into hasher: inout Hasher) {
+        hasher.combine(values)
+    }
+}
 
-extension Grid: CustomStringConvertible {
+// MARK: - Positions
+
+extension GridType {
+    public var bottomLeft: Coordinates {
+        .init(x: minX, y: maxY)
+    }
+
+    public var bottomRight: Coordinates {
+        .init(x: maxX, y: maxY)
+    }
+
+    public var topLeft: Coordinates {
+        .init(x: minX, y: minY)
+    }
+
+    public var topRight: Coordinates {
+        .init(x: maxX, y: minY)
+    }
+
+    private var minX: Int {
+        self.values.keys.map(\.x).min()!
+    }
+
+    private var minY: Int {
+        self.values.keys.map(\.y).min()!
+    }
+
+    private var maxX: Int {
+        self.values.keys.map(\.x).max()!
+    }
+
+    private var maxY: Int {
+        self.values.keys.map(\.y).max()!
+    }
+}
+
+// MARK: - CustomStringConvertible
+
+extension GridType {
     public var description: String {
         String(
             values.keys.reduce(into: [Int: [Int: String]]()) { partialResult, coordinates in
@@ -84,60 +143,32 @@ extension Grid: CustomStringConvertible {
 
 // MARK: - Equatable
 
-extension Grid: Equatable {
-    public static func == (lhs: Grid<Key, Value>, rhs: Grid<Key, Value>) -> Bool {
+extension GridType {
+    public static func == (lhs: Self, rhs: Self) -> Bool {
         lhs.values == rhs.values
     }
-}
 
-// MARK: - Hashable
-
-extension Grid: Hashable {
-    public func hash(into hasher: inout Hasher) {
-        hasher.combine(values)
-    }
-}
-
-// MARK: Positions
-
-public extension Grid {
-    var bottomLeft: Coordinates {
-        .init(x: minX, y: maxY)
+    // Allow comparing different grid types.
+    public static func == <OtherGrid>(
+        lhs: OtherGrid,
+        rhs: Self
+    ) -> Bool where OtherGrid: GridType, OtherGrid.Key == Key, OtherGrid.Value == Value {
+        lhs.values == rhs.values
     }
 
-    var bottomRight: Coordinates {
-        .init(x: maxX, y: maxY)
-    }
-
-    var topLeft: Coordinates {
-        .init(x: minX, y: minY)
-    }
-
-    var topRight: Coordinates {
-        .init(x: maxX, y: minY)
-    }
-
-    private var minX: Int {
-        self.values.keys.map(\.x).min()!
-    }
-
-    private var minY: Int {
-        self.values.keys.map(\.y).min()!
-    }
-
-    private var maxX: Int {
-        self.values.keys.map(\.x).max()!
-    }
-
-    private var maxY: Int {
-        self.values.keys.map(\.y).max()!
+    // Allow comparing different grid types.
+    public static func != <OtherGrid>(
+        lhs: OtherGrid,
+        rhs: Self
+    ) -> Bool where OtherGrid: GridType, OtherGrid.Key == Key, OtherGrid.Value == Value {
+        lhs.values != rhs.values
     }
 }
 
 // MARK: - Coordinates
 
-public extension Grid where Key == Coordinates {
-    convenience init(data: String, separator: String = "\n", valueMapper: (String) -> Value) {
+extension GridType where Key == Coordinates {
+    public init(data: String, separator: String = "\n", valueMapper: (String) -> Value) {
         let values = data.split(separator: separator)
             .enumerated()
             .reduce(into: [Key: Value]()) { partialResult, item in
@@ -151,29 +182,99 @@ public extension Grid where Key == Coordinates {
     }
 }
 
-public extension Grid where Key == Coordinates {
-    func getCoordinates(from: Key, direction: CompassDirection) -> Key? {
+extension GridType where Key == Coordinates {
+    public func getCoordinates(from: Key, direction: CompassDirection) -> Key? {
         let coordinates = from.next(in: direction)
         return values.keys.contains(coordinates) ? coordinates : nil
     }
 }
 
-public extension Grid where Key == Coordinates, Value: CaseIterable {
-    convenience init(data: String) {
+extension GridType where Key == Coordinates, Value: CaseIterable {
+    public init(data: String) {
         self.init(data: data) { value in
             Value.allCases.first(where: { $0.description == value })!
         }
     }
 }
 
-public extension Grid where Key == Coordinates, Value == Int {
-    convenience init(data: String) {
+extension GridType where Key == Coordinates, Value == Int {
+    public init(data: String) {
         self.init(data: data) { Int($0)! }
     }
 }
 
-public extension Grid where Key == Coordinates, Value == String {
-    convenience init(data: String) {
+extension GridType where Key == Coordinates, Value == String {
+    public init(data: String) {
         self.init(data: data) { $0 }
+    }
+}
+
+// MARK: - Grid
+
+// Mapping `ImmutableGrid` back to `Grid` for backwards compatibility.
+@available(*, deprecated, renamed: "ImmutableGrid", message: "Replaced now we also have a mutable version.")
+public typealias Grid = ImmutableGrid
+
+public final class ImmutableGrid<Key: GridKeyType, Value: GridValueType>: GridType {
+    public let values: [Key: Value]
+
+    public subscript(key: Key) -> Value? {
+        get { values[key] }
+    }
+
+    public init(values: [Key: Value]) {
+        self.values = values
+    }
+}
+
+@available(macOS 15.0, *)
+public final class MutableGrid<Key: GridKeyType, Value: GridValueType>: GridType {
+    public var values: [Key: Value] {
+        valuesMutex.withLock { $0 }
+    }
+
+    private let valuesMutex: Mutex<[Key: Value]>
+
+    public subscript(key: Key) -> Value? {
+        get { valuesMutex.withLock { $0[key] } }
+        set { valuesMutex.withLock { $0[key] = newValue } }
+    }
+
+    public init(values: [Key: Value]) {
+        self.valuesMutex = Mutex(values)
+    }
+
+    /// Adds all the input values.
+    ///
+    /// Defaults to overriding any existing values with the new inputs.
+    public func add(_ newValues: [Key: Value]) {
+        add(newValues, overrideExisting: true)
+    }
+
+    /// Adds all the input values.
+    public func add(_ newValues: [Key: Value], overrideExisting: Bool) {
+        valuesMutex.withLock { values in
+            values.merge(newValues) { old, new in
+                overrideExisting ? new : old
+            }
+        }
+    }
+
+    /// Removes all values of all input keys.
+    public func remove(keys: [Key]) {
+        valuesMutex.withLock { values in
+            for key in values.keys {
+                values.removeValue(forKey: key)
+            }
+        }
+    }
+
+    /// Removes all occurrences equal to the value input.
+    public func remove(value: Value) {
+        valuesMutex.withLock { values in
+            for element in values where element.value == value {
+                values.removeValue(forKey: element.key)
+            }
+        }
     }
 }
